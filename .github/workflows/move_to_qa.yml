@@ -1,0 +1,32 @@
+name: Move Merged PR to QA
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  move-to-qa:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.pull_request.merged == true }}
+    steps:
+      - name: Move ticket to QA
+        uses: actions/github-script@v5
+        with:
+          github-token: ${{secrets.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}}
+          script: |
+            const projectId = 'https://github.com/Nice-Blue/toadstool-frontend';
+            const columnName = 'QA';
+            const issueNumber = context.payload.pull_request.number;
+
+            const columnId = await github.request('GET /projects/{projectId}/columns', {
+              projectId: projectId
+            }).then(response => {
+              const column = response.data.find(column => column.name === columnName);
+              return column.id;
+            });
+
+            await github.request('POST /projects/columns/{columnId}/cards', {
+              columnId: columnId,
+              content_id: issueNumber,
+              content_type: 'PullRequest'
+            });
